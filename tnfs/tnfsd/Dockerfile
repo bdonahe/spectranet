@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 MAINTAINER Thomas Cherryhomes <thom.cherryhomes@gmail.com>
-EXPOSE 16384
+EXPOSE 16384/udp
 VOLUME /data
 ADD bin/tnfsd /bin
 RUN chmod +x /bin/tnfsd
