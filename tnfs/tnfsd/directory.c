@@ -33,6 +33,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
+#ifdef WIN32
+#include <Fileapi.h>
+#endif
 
 #include "tnfs.h"
 #include "log.h"
@@ -57,7 +60,11 @@ int validate_path(Session *s, const char *path)
 {
 	char valpath[MAX_FILEPATH];
 
+#ifdef WIN32
+	GetFullPathNameA(path, MAX_FILEPATH, valpath, NULL);
+#else
 	realpath(path, valpath);
+#endif
 
 #ifdef DEBUG
 	fprintf(stderr, "validate path: %s::%s == ", valpath, realroot);
@@ -84,7 +91,11 @@ int tnfs_setroot(char *rootdir)
 	if (strlen(rootdir) > MAX_ROOT)
 		return -1;
 
+#ifdef WIN32
+	GetFullPathNameA(rootdir, MAX_ROOT, realroot, NULL);
+#else
 	realpath(rootdir, realroot);
+#endif
 
 #ifdef DEBUG
 	fprintf(stderr, "setroot real path: %s\n", realroot);
