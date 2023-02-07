@@ -29,7 +29,7 @@
 
 #include "tnfs.h"
 
-#define TNFS_DIROPT_NO_FOLDERSFIRST 0x01 
+#define TNFS_DIROPT_NO_FOLDERSFIRST 0x01
 #define TNFS_DIROPT_NO_SKIPHIDDEN 0x02
 #define TNFS_DIROPT_NO_SKIPSPECIAL 0x04
 #define TNFS_DIROPT_DIR_PATTERN 0x08
@@ -44,6 +44,9 @@
 
 /* initialize and set the root dir */
 int tnfs_setroot(char *rootdir);
+
+/* validates the path is inside our root dir */
+int validate_path(Session *s, const char *path);
 
 /* validates a path points to an actual directory */
 int validate_dir(Session *s, const char *path);
