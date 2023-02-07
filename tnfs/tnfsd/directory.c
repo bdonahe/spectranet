@@ -49,12 +49,46 @@
 directory_entry_list dirlist_concat(directory_entry_list list1, directory_entry_list list2);
 
 char root[MAX_ROOT]; /* root for all operations */
+char realroot[MAX_ROOT]; /* full path of the tnfs root dir */
 char dirbuf[MAX_FILEPATH];
+
+/* validates the path is inside our root dir, returns TRUE if inside our root */
+int validate_path(Session *s, const char *path)
+{
+	char valpath[MAX_FILEPATH];
+
+	realpath(path, valpath);
+
+#ifdef DEBUG
+	fprintf(stderr, "validate path: %s::%s == ", valpath, realroot);
+#endif
+
+	if (strstr(valpath, realroot) != NULL)
+	{
+#ifdef DEBUG
+	fprintf(stderr, "PASSED\n");
+#endif
+		return 1;
+	}
+	else
+	{
+#ifdef DEBUG
+	fprintf(stderr, "FAILED\n");
+#endif
+		return 0;
+	}
+}
 
 int tnfs_setroot(char *rootdir)
 {
 	if (strlen(rootdir) > MAX_ROOT)
 		return -1;
+
+	realpath(rootdir, realroot);
+
+#ifdef DEBUG
+	fprintf(stderr, "setroot real path: %s\n", realroot);
+#endif
 
 	strlcpy(root, rootdir, MAX_ROOT);
 	return 0;
@@ -105,7 +139,7 @@ void get_root(Session *s, char *buf, int bufsz)
 	}
 }
 
-/* normalize paths, remove multiple delimiters 
+/* normalize paths, remove multiple delimiters
  * the new path at most will be exactly the same as the old
  * one, and if the path is modified it will be shorter so
  * doing "normalize_path(buf, buf, sizeof(buf)) is fine */
@@ -182,7 +216,14 @@ void tnfs_opendir(Header *hdr, Session *s, unsigned char *databuf, int datasz)
 			snprintf(path, MAX_TNFSPATH, "%s/%s/%s",
 					 root, s->root, databuf);
 			normalize_path(s->dhandles[i].path, path, MAX_TNFSPATH);
-			if ((dptr = opendir(s->dhandles[i].path)) != NULL)
+
+			if (!validate_path(s, s->dhandles[i].path))
+			{
+				/* path is outside of our home dir, error! */
+				hdr->status = TNFS_EPERM;
+				tnfs_send(s, hdr, NULL, 0);
+			}
+			else if ((dptr = opendir(s->dhandles[i].path)) != NULL)
 			{
 				s->dhandles[i].handle = dptr;
 
@@ -427,22 +468,22 @@ void tnfs_readdirx(Header *hdr, Session *s, unsigned char *databuf, int datasz)
 	for(int w=0; w < 1000000000LL; w++)
 		wl = wl + w * w;
 	LOG("PAUSE = %lu\n", wl);
-*/	
+*/
 #endif
 
 	// Return EOF if we're already at the end of the list
 	if (dh->current_entry == NULL)
 	{
-#ifdef DEBUG	
+#ifdef DEBUG
 		TNFSMSGLOG(hdr, "readdirx no more entries - returning EOF");
-#endif	
+#endif
 		hdr->status = TNFS_EOF;
 		tnfs_send(s, hdr, NULL, 0);
 	}
 
-#ifdef DEBUG	
+#ifdef DEBUG
 	TNFSMSGLOG(hdr, "readdirx request for %hu entries", req_count);
-#endif	
+#endif
 
 /* The number of bytes required by the response 'header'
  response_count (1) + dir_status (1) + dirpos (2) = 4 bytes
@@ -515,7 +556,7 @@ void tnfs_readdirx(Header *hdr, Session *s, unsigned char *databuf, int datasz)
 	hdr->status = TNFS_SUCCESS;
 #ifdef DEBUG
 	TNFSMSGLOG(hdr, "readdirx responding with %hu entries, status_flags=0x%x", reply[0], reply[1]);
-#endif	
+#endif
 	tnfs_send(s, hdr, reply, total_size);
 }
 
@@ -751,6 +792,14 @@ void tnfs_opendirx(Header *hdr, Session *s, unsigned char *databuf, int datasz)
 
 			// Remove any doubled-up path separators
 			normalize_path(s->dhandles[i].path, path, MAX_TNFSPATH);
+
+			if (!validate_path(s, s->dhandles[i].path))
+			{
+				/* path is outside of our home dir, error! */
+				hdr->status = TNFS_EPERM;
+				tnfs_send(s, hdr, NULL, 0);
+				return;
+			}
 
 			result = _load_directory(&(s->dhandles[i]), diropts, sortopts, maxresults, pPattern);
 			if (result == 0)

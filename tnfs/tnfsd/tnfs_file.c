@@ -90,6 +90,9 @@ void tnfs_open(Header *hdr, Session *s, unsigned char *buf, int bufsz)
 		tnfs_valid_filename(s, fnbuf, (char *)buf + 4, bufsz - 4) < 0)
 	{
 		/* filename could not be constructed */
+#ifdef DEBUG
+		fprintf(stderr, "filename could not be constructed\n  path: %s\n  filename: %s\n", fnbuf, (char *)buf + 4);
+#endif
 		hdr->status = TNFS_EINVAL;
 		tnfs_send(s, hdr, NULL, 0);
 		return;
@@ -108,6 +111,7 @@ void tnfs_open(Header *hdr, Session *s, unsigned char *buf, int bufsz)
 			fd = open(fnbuf, tnfs_make_mode(flags), mode);
 #endif
 #ifdef DEBUG
+			fprintf(stderr, "path: %s\n", fnbuf);
 			fprintf(stderr, "filename: %s\n", (char *)buf + 4);
 			fprintf(stderr, "flags: %u\n", flags);
 			fprintf(stderr, "mode: %o\n", mode);
@@ -384,6 +388,9 @@ int tnfs_valid_filename(Session *s,
 	}
 	if (strstr(filename, "..") != NULL)
 	{
+#ifdef DEBUG
+		fprintf(stderr, "Double period in filename not allowed!\n");
+#endif
 		return -1;
 	}
 	get_root(s, fullpath, MAX_FILEPATH);
