@@ -230,11 +230,11 @@ void tnfs_opendir(Header *hdr, Session *s, unsigned char *databuf, int datasz)
 
 			if (!validate_path(s, s->dhandles[i].path))
 			{
-				/* path is outside of our home dir, error! */
-				hdr->status = TNFS_EPERM;
-				tnfs_send(s, hdr, NULL, 0);
+				/* path is outside of our home dir, set path to root */
+				strcpy(s->dhandles[i].path, root);
 			}
-			else if ((dptr = opendir(s->dhandles[i].path)) != NULL)
+
+			if ((dptr = opendir(s->dhandles[i].path)) != NULL)
 			{
 				s->dhandles[i].handle = dptr;
 
@@ -806,10 +806,8 @@ void tnfs_opendirx(Header *hdr, Session *s, unsigned char *databuf, int datasz)
 
 			if (!validate_path(s, s->dhandles[i].path))
 			{
-				/* path is outside of our home dir, error! */
-				hdr->status = TNFS_EPERM;
-				tnfs_send(s, hdr, NULL, 0);
-				return;
+				/* path is outside of our home dir, set path to root */
+				strcpy(s->dhandles[i].path, root);
 			}
 
 			result = _load_directory(&(s->dhandles[i]), diropts, sortopts, maxresults, pPattern);
