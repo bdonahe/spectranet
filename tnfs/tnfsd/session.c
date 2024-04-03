@@ -122,6 +122,7 @@ int tnfs_mount(Header *hdr, unsigned char *buf, int bufsz)
 
 	s->last_contact = time(NULL);
 	s->ipaddr = hdr->ipaddr;
+	s->cli_fd = hdr->cli_fd;
 
 	/* set up the proto version/timeout in the reply buffer */
 	repbuf[0] = PROTOVERSION_LSB;
@@ -316,6 +317,25 @@ Session *tnfs_findsession_ipaddr(in_addr_t ipaddr, int *sindex)
 		}
 	}
 	return NULL;
+}
+
+void tnfs_removesession_by_cli_fd(int cli_fd)
+{
+	int i;
+	Session *s;
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (slist[i])
+		{
+			s = slist[i];
+			if (s->cli_fd == cli_fd)
+			{
+				LOG("Deleting disconnected session 0x%02x\n", s->sid);
+				tnfs_freesession(s, i);
+			}
+		}
+	}
 }
 
 /* Creates a new unique SID */

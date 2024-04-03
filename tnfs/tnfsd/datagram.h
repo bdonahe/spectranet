@@ -47,17 +47,23 @@
 
 #include "tnfs.h"
 
+typedef struct _tcp_conn
+{
+	struct sockaddr_in cliaddr;  /* client address */
+	int cli_fd;					 /* FD for the TCP connection */
+} TcpConnection;
+
 /* Handle the socket interface */
 void tnfs_sockinit();
 void tnfs_mainloop();
 void tnfs_handle_udpmsg();
-void tcp_accept(int *fdlist);
-void tnfs_handle_tcpmsg(int cli_fd);
-void tnfs_decode(struct sockaddr_in *cliaddr, 
-		int rxbytes, unsigned char *rxbuf);
+void tcp_accept(TcpConnection *tcp_conn_list);
+void tnfs_handle_tcpmsg(TcpConnection *tcp_conn);
+void tnfs_decode(struct sockaddr_in *cliaddr, int cli_fd,
+	int rxbytes, unsigned char *rxbuf);
 void tnfs_invalidsession(Header *hdr);
 void tnfs_badcommand(Header *hdr, Session *sess);
 void tnfs_send(Session *sess, Header *hdr, unsigned char *msg, int msgsz);
-void tnfs_resend(Session *sess, struct sockaddr_in *cliaddr);
+void tnfs_resend(Session *sess, struct sockaddr_in *cliaddr, int cli_fd);
 
 #endif
