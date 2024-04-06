@@ -29,6 +29,7 @@ TNFS daemon datagram handler
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 
 #ifdef UNIX
 #include <sys/socket.h>
@@ -151,6 +152,7 @@ void tnfs_sockinit()
 	{
     	die("setsockopt(SO_REUSEADDR) failed");
 	}
+	signal(SIGPIPE, SIG_IGN);
 
 	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
